@@ -1,0 +1,454 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xadori | Traditional Elegance, Craftsmanship & Care</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root {
+            --primary: #8e244d; /* Luxury Berry */
+            --accent: #d81b60; /* Highlight Pink */
+            --bg: #fdfdfd;
+            --text: #2d3436;
+            --light-gray: #f1f2f6;
+            --shadow: 0 10px 30px rgba(0,0,0,0.08);
+            --header-h: 80px;
+        }
+
+        * { margin:0; padding:0; box-sizing:border-box; outline: none; transition: all 0.2s ease; }
+        body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding-top: var(--header-h); }
+        h1, h2, h3 { font-family: 'Playfair Display', serif; }
+
+        /* Header & Navigation */
+        header {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            padding: 0 5%;
+            height: var(--header-h);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+        }
+        .logo-container { display: flex; align-items: center; gap: 15px; cursor: pointer; }
+        .logo-container img { height: 60px; }
+        .logo-text { font-size: 1.8rem; font-weight: 600; color: var(--primary); }
+        
+        .nav-links { display: flex; gap: 30px; }
+        .nav-links span { cursor: pointer; font-weight: 500; color: #555; }
+        .nav-links span:hover { color: var(--primary); }
+
+        /* Layout & Views */
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem 5%; }
+        .view { display: none; animation: fadeIn 0.5s ease; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* General UI Elements */
+        .btn { 
+            background: var(--primary); color: white; padding: 12px 24px; 
+            border: none; border-radius: 12px; font-weight: 500; 
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+            text-align: center; margin-top: 1rem; text-decoration: none; width: 100%;
+        }
+        .btn:hover { background: var(--accent); }
+        .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+        .btn-outline:hover { background: var(--primary); color: white; }
+        
+        .quantity-control { display: flex; align-items: center; gap: 10px; margin: 15px 0; font-size: 1.2rem; }
+        .quantity-btn { background: #eee; border: none; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
+
+        input, textarea { 
+            width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; 
+            border-radius: 10px; background: #f9f9f9; font-family: inherit;
+        }
+
+        /* Home Product Grid */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2.5rem; }
+        .product-card { 
+            background: white; border-radius: 20px; overflow: hidden; 
+            box-shadow: var(--shadow); cursor: pointer; 
+        }
+        .product-card:hover { transform: translateY(-8px); }
+        .product-card img { width: 100%; height: 380px; object-fit: cover; }
+        .product-info { padding: 1.5rem; text-align: center; }
+        .price { color: var(--accent); font-weight: 600; font-size: 1.3rem; margin-top: 5px; }
+
+        /* Product Detail View */
+        .detail-flex { display: flex; gap: 4rem; flex-wrap: wrap; }
+        .image-side { flex: 1.2; min-width: 300px; }
+        .content-side { flex: 1; min-width: 300px; }
+        .main-img { width: 100%; border-radius: 20px; box-shadow: var(--shadow); object-fit: cover; height: 500px; }
+        .thumb-nav { display: flex; gap: 10px; margin-top: 1rem; }
+        .thumb-nav img { width: 70px; height: 70px; border-radius: 10px; cursor: pointer; object-fit: cover; border: 2px solid transparent; }
+        .thumb-nav img.active { border-color: var(--primary); }
+
+        /* Cart & Shopping Bag */
+        .cart-fab {
+            position: fixed; bottom: 30px; right: 30px; 
+            background: var(--primary); color: white; width: 65px; height: 65px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; cursor: pointer; box-shadow: 0 10px 25px rgba(142, 36, 77, 0.4); z-index: 999;
+        }
+        .cart-item { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 1rem; background: white; border-radius: 15px; margin-bottom: 1rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+        }
+        .cart-summary { background: white; padding: 2rem; border-radius: 20px; box-shadow: var(--shadow); height: fit-content; }
+
+        /* Customer Care & Reviews */
+        .care-card { background: #fff; padding: 2rem; border-radius: 20px; box-shadow: var(--shadow); margin-top: 2rem; display: flex; flex-direction: column; gap: 15px; border-left: 6px solid var(--primary); }
+        .care-item { display: flex; align-items: center; gap: 15px; font-size: 1.1rem; }
+        .care-item i { color: var(--primary); font-size: 1.3rem; width: 25px; text-align: center; }
+
+        .review-card { background: #fdfdfd; padding: 1.2rem; border-radius: 15px; margin-top: 1rem; border: 1px solid #eee; }
+
+        footer { background: #1a1a1a; color: #888; padding: 4rem 5%; text-align: center; margin-top: 4rem; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo-container" onclick="showView('home')">
+        <img src="Logo.jpeg" alt="Xadori Logo">
+        <div class="logo-text">XADORI</div>
+    </div>
+    <div class="nav-links">
+        <span onclick="showView('home')">Collection</span>
+        <span onclick="showView('care')">Support</span>
+    </div>
+</header>
+
+<div class="container">
+    <div id="home" class="view active">
+        <h2 style="margin-bottom: 2.5rem; font-size: 2.8rem; text-align: center;">Authentic Assamese Collections</h2>
+        <div class="grid" id="productGrid"></div>
+    </div>
+
+    <div id="productDetail" class="view">
+        <button class="btn btn-outline" style="width: auto; margin-bottom: 2.5rem;" onclick="showView('home')">
+            <i class="fa-solid fa-arrow-left"></i> Back to Collection
+        </button>
+        <div class="detail-flex">
+            <div class="image-side">
+                <img id="mainImg" class="main-img" src="">
+                <div id="thumbNav" class="thumb-nav"></div>
+            </div>
+            <div class="content-side">
+                <h1 id="pName" style="font-size: 3rem;"></h1>
+                <p class="price" id="pPrice" style="font-size: 2.2rem; margin: 1rem 0;"></p>
+                <p style="color: #666; margin-bottom: 1rem; font-size: 1.1rem;">Authentic craftsmanship. Hand-woven with love and traditional techniques, this piece embodies the timeless elegance of Assam.</p>
+                
+                <div class="quantity-control">
+                    <span>Quantity:</span>
+                    <button class="quantity-btn" onclick="updateQty(-1)">-</button>
+                    <span id="pQty">1</span>
+                    <button class="quantity-btn" onclick="updateQty(1)">+</button>
+                </div>
+
+                <button class="btn" onclick="addToCart()">
+                    <i class="fa-solid fa-cart-plus"></i> Add to Collection Bag
+                </button>
+
+                <div style="margin-top: 3rem;">
+                    <h3>Customer Reviews</h3>
+                    <div id="reviewsList"></div>
+                    <div style="margin-top: 2rem; background: var(--light-gray); padding: 1.5rem; border-radius: 20px;">
+                        <h4>Share your experience</h4>
+                        <input id="revName" placeholder="Your Name">
+                        <textarea id="revText" rows="3" placeholder="How was the weave?"></textarea>
+                        <button class="btn btn-outline" onclick="submitReview()">Submit Review</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="cart" class="view">
+        <h2 style="font-size: 2.5rem; margin-bottom: 2.5rem;">Your Collection Bag</h2>
+        <div class="detail-flex">
+            <div style="flex: 1.5;" id="cartList"></div>
+            <div style="flex: 1;" class="cart-summary">
+                <h3>Order Summary</h3>
+                <div id="cartSummary" style="margin: 1.5rem 0; font-size: 1.1rem;"></div>
+                <hr>
+                <h4 style="margin-top: 1.5rem;">Delivery Details</h4>
+                <input id="custName" placeholder="Full Name">
+                <input id="custPhone" placeholder="WhatsApp Number">
+                <textarea id="custAddr" placeholder="Full Delivery Address"></textarea>
+                
+                <button class="btn" onclick="handleRazorpay()">Secure Checkout</button>
+                <button class="btn btn-outline" onclick="orderWhatsApp()" style="background: #25D366; border-color: #25D366; color: white;">
+                    <i class="fa-brands fa-whatsapp"></i> Confirm via WhatsApp
+                </button>
+                <div style="font-size: 0.8rem; text-align: center; color: #888; margin-top: 10px;">
+                    Online Payment & WhatsApp Confirmation available.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="care" class="view">
+        <h2 style="font-size: 2.5rem; margin-bottom: 2rem;">Customer Care & Support</h2>
+        <div class="care-card">
+            <h3>Contact Us</h3>
+            <p>We are here to help with your purchase or any traditional wear inquiries.</p>
+            <div class="care-item">
+                <i class="fa-solid fa-phone"></i>
+                <div>
+                    <strong>Call or WhatsApp:</strong><br>
+                    <a href="tel:8011105220" style="color: inherit; text-decoration: none;">+91 8011105220</a>
+                </div>
+            </div>
+            <div class="care-item">
+                <i class="fa-solid fa-location-dot"></i>
+                <div>
+                    <strong>Store Address:</strong><br>
+                    Hawajan, Biswanath, Assam, 784169
+                </div>
+            </div>
+            <div class="care-item">
+                <i class="fa-solid fa-envelope"></i>
+                <div>
+                    <strong>Email:</strong><br>
+                    support@xadori.com
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="cart-fab" onclick="showView('cart')">
+    <i class="fa-solid fa-bag-shopping"></i>
+</div>
+
+<footer>
+    <div class="logo-container" style="justify-content: center; margin-bottom: 1.5rem; cursor: default;">
+        <img src="Logo.jpeg" alt="Xadori Logo">
+        <div class="logo-text" style="color: white;">XADORI</div>
+    </div>
+    <p>Premium Mekhela Sador & Traditional Wear from Assam</p>
+    <p style="margin-top: 2rem; font-size: 0.9rem; color: #555;">&copy; 2026 Xadori Store. Traditional Elegance, Craftsmanship & Care.</p>
+</footer>
+
+<script>
+    // --- 1. CONFIGURATION & DATA ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyAKxxHNUrsQbz-aKe3-AKHO3qlw6gzRCS0",
+        authDomain: "xadori-store.firebaseapp.com",
+        projectId: "xadori-store",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const PRODUCTS = [
+        { id: 1, name: "Sneha Rose Mekhela Sador", price: 720, images: ["cloth1.jpeg", "cloth2.jpeg"] },
+        { id: 2, name: "Midnight Silk Collection", price: 1400, images: ["cloth2.jpeg", "cloth1.jpeg"] }
+    ];
+
+    let cart = []; // Store items as {id, name, price, qty, img}
+    let currentProduct = null;
+    let currentQty = 1;
+
+    // --- 2. CORE VIEW ENGINE ---
+    function showView(viewId) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById(viewId).classList.add('active');
+        window.scrollTo(0,0);
+        
+        if(viewId === 'home') renderHome();
+        if(viewId === 'cart') renderCart();
+    }
+
+    // --- 3. HOME PRODUCT GRID ---
+    function renderHome() {
+        const grid = document.getElementById('productGrid');
+        grid.innerHTML = PRODUCTS.map(p => `
+            <div class="product-card" onclick="openProduct(${p.id})">
+                <img src="${p.images[0]}" alt="${p.name}">
+                <div class="product-info">
+                    <h3>${p.name}</h3>
+                    <p class="price">₹${p.price}</p>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // --- 4. PRODUCT DETAIL LOGIC ---
+    function openProduct(id) {
+        currentProduct = PRODUCTS.find(p => p.id === id);
+        currentQty = 1; // Reset Qty
+        showView('productDetail');
+        
+        document.getElementById('pName').innerText = currentProduct.name;
+        document.getElementById('pPrice').innerText = `₹${currentProduct.price}`;
+        document.getElementById('mainImg').src = currentProduct.images[0];
+        document.getElementById('pQty').innerText = currentQty;
+        
+        const nav = document.getElementById('thumbNav');
+        nav.innerHTML = currentProduct.images.map(img => `
+            <img src="${img}" onclick="document.getElementById('mainImg').src='${img}'">
+        `).join('');
+
+        fetchReviews(id);
+    }
+
+    function updateQty(delta) {
+        currentQty = Math.max(1, currentQty + delta);
+        document.getElementById('pQty').innerText = currentQty;
+    }
+
+    // --- 5. SHOPPING BAG / CART LOGIC ---
+    function addToCart() {
+        const existingItem = cart.find(item => item.id === currentProduct.id);
+        if (existingItem) {
+            existingItem.qty += currentQty;
+        } else {
+            cart.push({...currentProduct, qty: currentQty, img: currentProduct.images[0] });
+        }
+        alert(`${currentQty} ${currentProduct.name} added to bag!`);
+    }
+
+    function renderCart() {
+        const list = document.getElementById('cartList');
+        const summary = document.getElementById('cartSummary');
+        
+        if(cart.length === 0) {
+            list.innerHTML = `<div style="text-align:center; padding: 4rem; background: white; border-radius: 20px;">
+                <i class="fa-solid fa-box-open" style="font-size: 5rem; color: #ddd; margin-bottom: 1.5rem;"></i>
+                <p style="font-size: 1.2rem; color: #666;">Your Collection Bag is empty.</p>
+                <button class="btn btn-outline" style="width: auto; margin-top: 1rem;" onclick="showView('home')">Start Shopping</button>
+            </div>`;
+            summary.innerHTML = "Subtotal: ₹0";
+            return;
+        }
+
+        list.innerHTML = cart.map((item, index) => `
+            <div class="cart-item">
+                <div style="display:flex; align-items:center; gap: 1.5rem;">
+                    <img src="${item.img}" style="width: 70px; height: 70px; border-radius: 12px; object-fit: cover;">
+                    <div>
+                        <strong style="font-size: 1.1rem;">${item.name}</strong><br>
+                        <small style="color:var(--accent)">₹${item.price} x ${item.qty}</small>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <strong>₹${item.price * item.qty}</strong>
+                    <i class="fa-solid fa-trash" style="color:#ff7675; cursor:pointer" onclick="removeFromCart(${index})"></i>
+                </div>
+            </div>
+        `).join('');
+
+        const total = cart.reduce((sum, p) => sum + (p.price * p.qty), 0);
+        summary.innerHTML = `
+            <div style="display:flex; justify-content:space-between"><span>Subtotal</span><span>₹${total}</span></div>
+            <div style="display:flex; justify-content:space-between; margin-top: 0.5rem;"><span>Shipping</span><span style="color:green">FREE</span></div>
+            <div style="display:flex; justify-content:space-between; font-weight:600; font-size:1.4rem; margin-top:1rem; color:var(--primary)">
+                <span>Total</span><span>₹${total}</span>
+            </div>
+        `;
+    }
+
+    function removeFromCart(index) {
+        cart.splice(index, 1);
+        renderCart();
+    }
+
+    // --- 6. CHECKOUT: RAZORPAY & WHATSAPP ---
+    function orderWhatsApp() {
+        const name = document.getElementById('custName').value;
+        const phone = document.getElementById('custPhone').value;
+        const addr = document.getElementById('custAddr').value;
+
+        if(!name || !phone || !addr) return alert("Please fill shipping details");
+
+        const itemsListMsg = cart.map(i => `\t• ${i.name} (Qty ${i.qty})`).join("%0A");
+        const totalAmount = cart.reduce((a, b) => a + (b.price * b.qty), 0);
+
+        // Advanced formatting for WhatsApp
+        const msg = `✨ *New Order - Xadori Store* ✨%0A%0A*Name:* ${name}%0A*Phone:* ${phone}%0A*Address:* ${addr}%0A%0A*Items:*%0A${itemsListMsg}%0A%0A*Total Amount:* ₹${totalAmount}%0A%0APlease confirm my collection order. Thank you.`;
+        
+        // Save to Firebase, then open WhatsApp
+        db.collection("orders").add({ name, phone, addr, cart, totalAmount, date: new Date() })
+          .then(() => window.open(`https://wa.me/918011105220?text=${msg}`));
+    }
+
+    function handleRazorpay() {
+        const totalAmount = cart.reduce((a,b) => a + (b.price * b.qty), 0);
+        if(totalAmount === 0) return alert("Bag is empty!");
+
+        const options = {
+            "key": "YOUR_RAZORPAY_KEY", // CRITICAL: Get this Key ID from your Razorpay Dashboard
+            "amount": totalAmount * 100, // paise
+            "currency": "INR",
+            "name": "Xadori Store",
+            "description": "Secure Purchase",
+            "handler": function (response){
+                alert("Payment Successful! Order Confirmed via Payment.");
+                // Option: Trigger WhatsApp with payment reference
+                orderWhatsAppWithPayment(response.razorpay_payment_id);
+            },
+            "theme": { "color": "#8e244d" }
+        };
+        new Razorpay(options).open();
+    }
+
+    // Modified WhatsApp flow for payment reference
+    function orderWhatsAppWithPayment(paymentId) {
+        // (Similar logic to orderWhatsApp but adds the payment reference to the message)
+        const name = document.getElementById('custName').value;
+        // ... (collect details)
+        const paymentMsg = `(Paid via Razorpay: ${paymentId})`;
+        // ... (update message formatter)
+    }
+
+    // --- 7. REVIEWS LOGIC ---
+    function submitReview() {
+        const name = document.getElementById('revName').value;
+        const text = document.getElementById('revText').value;
+        if(!name || !text) return alert("Please add your name and text.");
+
+        db.collection("reviews").add({
+            pId: currentProduct.id,
+            name, text, date: new Date()
+        }).then(() => {
+            alert("Thank you for your review!");
+            document.getElementById('revName').value = "";
+            document.getElementById('revText').value = "";
+            fetchReviews(currentProduct.id);
+        });
+    }
+
+    function fetchReviews(pId) {
+        const list = document.getElementById('reviewsList');
+        db.collection("reviews").where("pId", "==", pId).orderBy("date", "desc").get()
+          .then(snap => {
+              list.innerHTML = snap.empty ? "<p>No reviews yet.</p>" : 
+                snap.docs.map(doc => `
+                    <div class="review-card">
+                        <strong>${doc.data().name}</strong>
+                        <p>${doc.data().text}</p>
+                    </div>
+                `).join('');
+          });
+    }
+
+    // Initial Load
+    renderHome();
+</script>
+
+</body>
+</html>
+```
